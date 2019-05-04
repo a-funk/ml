@@ -28,7 +28,7 @@ def run_train_test(training_input, testing_input):
     """
     
     heading = training_input[0]
-    print(heading)
+    print("Training data: ", heading)
 
     numA = heading[1]
     numB = heading[2]
@@ -44,9 +44,79 @@ def run_train_test(training_input, testing_input):
     print(centB)
     centC = calc_centroid(dim, num_per_class, training_input, "C")
     print(centC)
-    #pass
+    
+    vectAB = calc_vect(centA, centB, dim)
+    midAB = calc_mid(centA, centB, dim)
+   
+    vectBC = calc_vect(centB, centC, dim)
+    midBC = calc_mid(centB, centC, dim)
+
+    vectAC = calc_vect(centA, centC, dim)
+    midAC = calc_mid(centA, centC, dim)
+
+    #Here is high level info from the testing data
+    heading = testing_input[0]
+    actualA = heading[1]
+    actualB = heading[2]
+    actualC = heading[3]
+    actual_per_class = np.array([actualA, actualB, actualC])
+    dim = heading[0]
+
+    
+
+    #predA = 
+
+    #Decision boindary is a plane orthonal to the vector 
+    #between two centroids and passing through the midpoint
+    #of the line segment which connects the two centroids
+def ab_bound(vectAB, midAB, dim, data):
+    val = 0
+    for i in range(0,dim):
+        val=val+vectAB[i]*(data[i]-midAB[i])
+    return val
+
+def bc_bound(vectBC, midBC, dim, data):
+    val = 0
+    for i in range(0,dim):
+        val=val+vectBC[i]*(data[i]-midBC[i])
+    return val
+
+def ac_bound(vectAC, midAC, dim, data):
+    val = 0
+    for i in range(0,dim):
+        val=val+vectAC[i]*(data[i]-midAC[i])
+    return val
+
+"""
+Defining the Decision boundary and counting number of test 
+predicted to be within the boundary
+a(x-x0)+b(y-y0)+c(z-z0)=0 : plane eqn
+a,b,c are vector elements
+x0,y0,z0 are midpoint coords 
+x,y,z are test data values
+"""
+def dec_boundary(testing_input, vectAC, vectAB, vectBC, midAC, midAB, midBC, clust,
+                 actual_per_class, dim):
 
 
+
+"""
+Calculate the vector direction to establish boundary
+"""
+def calc_vect(centX, centY, dim):
+    vect = np.zeros(dim)
+    for i in range(0, dim):
+        vect[i] = centY[i]-centX[i]
+    return vect
+
+"""
+Calculate the midpoint between two centroids
+"""
+def calc_mid(centX, centY, dim):
+    midpoint = np.zeros(dim)
+    for i in range(0, dim):
+        midpoint[i] = (centX[i]+centY[i])/2
+    return midpoint    
 """
 dim is dimension of data
 n is the numX 
@@ -76,7 +146,6 @@ def calc_centroid(dim, num_per_class, data, clust):
                 centroid[j] = centroid[j]+data[i][j]
         for i in range(0,dim):
             centroid[i] = centroid[i]/n[2]
-    
 
     return centroid
 
@@ -105,9 +174,6 @@ if __name__ == "__main__":
     from scipy import sparse
     from scipy import linalg
     import scipy.sparse.linalg as spla
-    import matplotlib.pyplot as plt
-    from matplotlib import cm
-    from mpl_toolkits.mplot3d import axes3d
     """
     You can use this to test your code.
     python hw2.py [training file path] [testing file path]
