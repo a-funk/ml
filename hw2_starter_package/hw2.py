@@ -68,12 +68,12 @@ def run_train_test(training_input, testing_input):
     predA,predB,predC = dec_boundary(testing_input, vectAC, vectAB, vectBC, 
                                     midAC, midAB, midBC, actual_per_class, dim)
     
-   # print("Predicted A: ",predA,'\n',
-    #      "Predicted B: ",predB,'\n',
-     #     "Predicted C: ",predC,'\n')
+    print("Predicted A: ",predA,'\n',
+         "Predicted B: ",predB,'\n',
+         "Predicted C: ",predC,'\n')
 
     output_results = calc_rates(predA, predB, predC, actual_per_class)
-    #pp.pprint(output_results)
+    pp.pprint(output_results)
     return(output_results)
 
 
@@ -89,17 +89,15 @@ Precision
 def calc_rates(predA, predB, predC, actual_per_class):
     #Getting the TP and FP counts, TPR and FPR
     total = actual_per_class[0]+actual_per_class[1]+actual_per_class[2] # Total examples
-    tpA,fpA,tnA,tprA,fprA = ratesA(predA, actual_per_class, total)
-    tpB,fpB,tnB,tprB,fprB = ratesB(predB, actual_per_class, total)
-    tpC,fpC,tnC,tprC,fprC = ratesC(predC, actual_per_class, total)
-    true_pos = (tpA+tpB+tpC)/3.0    # Total num true positives
-    false_pos = (fpA+fpB+fpC)/3.0   # Total num false positives
-    true_neg = (tnA+tnB+tnC)/3.0    # Total num true negatives
+    tprA,fprA,accA,precA = ratesA(predA, predB, predC, actual_per_class, total)
+    tprB,fprB,accB,precB = ratesB(predA, predB, predC, actual_per_class, total)
+    tprC,fprC,accC,precC = ratesC(predA, predB, predC, actual_per_class, total)
+    
     tpr = (tprA+tprB+tprC)/3.0  # Average true positive rate
     fpr = (fprA+fprB+fprC)/3.0  # Average false positive rate
-    accuracy = (true_pos+true_neg)/total
+    accuracy = (accA+accB+accC)/3.0
     error_rate = 1-accuracy
-    precision = true_pos/(true_pos+false_pos)
+    precision = (precA+precB+precC)/3.0
 
     return {
                 "True Postive Rate: ": tpr,
@@ -111,38 +109,42 @@ def calc_rates(predA, predB, predC, actual_per_class):
 
 
 
-def ratesA(predA, actual_per_class, total):
+def ratesA(predA, predB, predC, actual_per_class, total):
     #TP and FP and TN count for A
     true_pos =  predA[0]
-    false_pos = predA[1] + predA[2]
-    true_neg = actual_per_class[1]-predA[1] + actual_per_class[2]-predA[2]
-    print(true_pos, true_neg, total)
+    false_pos = predB[0]+predC[0]
+    true_neg = predB[1]+predB[2]+predC[1]+predC[2]
     #TPR and FPR count for A
     tpr = true_pos/actual_per_class[0]
     fpr = false_pos/(actual_per_class[1]+actual_per_class[2])
     accuracy = (true_pos+true_neg)/total
+    precision = true_pos/(true_pos+false_pos)
+    return tpr, fpr, accuracy, precision
 
-    return true_pos, false_pos, true_neg, tpr, fpr
-
-def ratesB(predB, actual_per_class, total):
+def ratesB(predA, predB, predC, actual_per_class, total):
     #TP and FP and TN count for B
     true_pos =  predB[1]
-    false_pos = predB[0] + predB[2]
-    true_neg = actual_per_class[1]-predB[1] + actual_per_class[2]-predB[2]
+    false_pos = predA[1]+predC[1]
+    true_neg = predA[0]+predA[2]+predC[0]+predC[2]
+
     #TPR and FPR count for B
     tpr = true_pos/actual_per_class[1]
     fpr = false_pos/(actual_per_class[0]+actual_per_class[2])
-    return true_pos, false_pos, true_neg, tpr, fpr
+    accuracy = (true_pos+true_neg)/total
+    precision = true_pos/(true_pos+false_pos)
+    return tpr, fpr, accuracy, precision
 
-def ratesC(predC, actual_per_class, total):
+def ratesC(predA, predB, predC, actual_per_class, total):
     #TP and FP and TN count for C
     true_pos =  predC[2]
-    false_pos = predC[0] + predC[1]
-    true_neg = actual_per_class[0]-predC[0] + actual_per_class[1]-predC[1]
+    false_pos = predA[2]+predB[2]
+    true_neg = predA[0]+predA[1]+predB[0]+predB[1]
     #TPR and FPR count for C
     tpr = true_pos/actual_per_class[2]
     fpr = false_pos/(actual_per_class[0]+actual_per_class[1])
-    return true_pos, false_pos, true_neg, tpr, fpr
+    accuracy = (true_pos+true_neg)/total
+    precision = true_pos/(true_pos+false_pos)
+    return tpr, fpr, accuracy, precision
 
 """
 #Decision boindary is a plane orthonal to the vector 
