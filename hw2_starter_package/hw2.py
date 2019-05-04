@@ -28,6 +28,7 @@ def run_train_test(training_input, testing_input):
     """
     
     heading = training_input[0]
+    print(heading)
 
     numA = heading[1]
     numB = heading[2]
@@ -35,10 +36,15 @@ def run_train_test(training_input, testing_input):
 
     dim  = heading[0]           #Number of columns of data (num features)
     n = numA+numB+numC          #Number of entries (rows of initial data)
-    print(heading)
+    num_per_class = np.array([numA, numB, numC])
 
-    
-    pass
+    centA = calc_centroid(dim, num_per_class, training_input, "A")
+    print(centA)    
+    centB = calc_centroid(dim, num_per_class, training_input, "B")
+    print(centB)
+    centC = calc_centroid(dim, num_per_class, training_input, "C")
+    print(centC)
+    #pass
 
 
 """
@@ -47,9 +53,32 @@ n is the numX
 data is the training input
 clust is class A,B,C
 """
-def calc_centroid(dim, n, data, clust):
-    if(clust == 'A'):
-        for i in range(1,n):
+def calc_centroid(dim, num_per_class, data, clust):
+    centroid = np.zeros(dim)
+    n = num_per_class
+    if(clust == "A"):
+        for i in range(1,n[0]+1):  #Ranges from data[1:numA+1] 
+            for j in range (0, dim):
+                centroid[j] = centroid[j]+data[i][j]
+        for i in range(0,dim):
+            centroid[i] = centroid[i]/n[0]
+
+    elif(clust == "B"):
+        for i in range(n[0]+1,n[0]+n[1]+1):
+            for j in range (0, dim):
+                centroid[j] = centroid[j]+data[i][j]
+        for i in range(0,dim):
+            centroid[i] = centroid[i]/n[1]
+
+    elif(clust == "C"):
+        for i in range(n[0]+n[1]+1,n[0]+n[1]+n[2]+1):
+            for j in range (0, dim):
+                centroid[j] = centroid[j]+data[i][j]
+        for i in range(0,dim):
+            centroid[i] = centroid[i]/n[2]
+    
+
+    return centroid
 
 
 
@@ -68,6 +97,17 @@ def parse_file(filename):
         return data
 
 if __name__ == "__main__":
+    import os
+    import time
+    import math
+    import numpy as np
+    import scipy
+    from scipy import sparse
+    from scipy import linalg
+    import scipy.sparse.linalg as spla
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from mpl_toolkits.mplot3d import axes3d
     """
     You can use this to test your code.
     python hw2.py [training file path] [testing file path]
