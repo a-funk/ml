@@ -39,12 +39,9 @@ def run_train_test(training_input, testing_input):
     num_per_class = np.array([numA, numB, numC])
 
     centA = calc_centroid(dim, num_per_class, training_input, "A")
-    print(centA)    
     centB = calc_centroid(dim, num_per_class, training_input, "B")
-    print(centB)
     centC = calc_centroid(dim, num_per_class, training_input, "C")
-    print(centC)
-    
+    print("Centroids calculated...")
     vectAB = calc_vect(centA, centB, dim)
     midAB = calc_mid(centA, centB, dim)
    
@@ -53,6 +50,7 @@ def run_train_test(training_input, testing_input):
 
     vectAC = calc_vect(centA, centC, dim)
     midAC = calc_mid(centA, centC, dim)
+    print("Midpoints and vectors calculated...")
 
     #Here is high level info from the testing data
     heading = testing_input[0]
@@ -61,14 +59,143 @@ def run_train_test(training_input, testing_input):
     actualC = heading[3]
     actual_per_class = np.array([actualA, actualB, actualC])
     dim = heading[0]
+    print("Testing Data: ", heading )
 
+    predA = np.array([])
+    predB = np.array([])
+    predC = np.array([])
+
+    predA,predB,predC = dec_boundary(testing_input, vectAC, vectAB, vectBC, 
+                                    midAC, midAB, midBC, actual_per_class, dim)
     
+   # print("Predicted A: ",predA,'\n',
+    #      "Predicted B: ",predB,'\n',
+     #     "Predicted C: ",predC,'\n')
 
-    #predA = 
+    output_results = calc_rates(predA, predB, predC, actual_per_class)
+    #pp.pprint(output_results)
+    return(output_results)
 
-    #Decision boindary is a plane orthonal to the vector 
-    #between two centroids and passing through the midpoint
-    #of the line segment which connects the two centroids
+
+"""
+Here are the calculations of the relevants attributes
+True Positive Rate
+False Positive Rate
+Error Rate
+Accuracy
+Precision
+
+"""
+def calc_rates(predA, predB, predC, actual_per_class):
+    #Getting the TP and FP counts, TPR and FPR
+    total = actual_per_class[0]+actual_per_class[1]+actual_per_class[2] # Total examples
+    tpA,fpA,tnA,tprA,fprA = ratesA(predA, actual_per_class, total)
+    tpB,fpB,tnB,tprB,fprB = ratesB(predB, actual_per_class, total)
+    tpC,fpC,tnC,tprC,fprC = ratesC(predC, actual_per_class, total)
+    true_pos = (tpA+tpB+tpC)/3.0    # Total num true positives
+    false_pos = (fpA+fpB+fpC)/3.0   # Total num false positives
+    true_neg = (tnA+tnB+tnC)/3.0    # Total num true negatives
+    tpr = (tprA+tprB+tprC)/3.0  # Average true positive rate
+    fpr = (fprA+fprB+fprC)/3.0  # Average false positive rate
+    accuracy = (true_pos+true_neg)/total
+    error_rate = 1-accuracy
+    precision = true_pos/(true_pos+false_pos)
+
+    return {
+                "True Postive Rate: ": tpr,
+                "False Positive Rate: ": fpr,
+                "Error Rate: ": error_rate,
+                "Accuracy: ": accuracy,
+                "Precision: ": precision
+            }
+
+
+
+def ratesA(predA, actual_per_class, total):
+    #TP and FP and TN count for A
+    true_pos =  predA[0]
+    false_pos = predA[1] + predA[2]
+    true_neg = actual_per_class[1]-predA[1] + actual_per_class[2]-predA[2]
+    print(true_pos, true_neg, total)
+    #TPR and FPR count for A
+    tpr = true_pos/actual_per_class[0]
+    fpr = false_pos/(actual_per_class[1]+actual_per_class[2])
+    accuracy = (true_pos+true_neg)/total
+
+    return true_pos, false_pos, true_neg, tpr, fpr
+
+def ratesB(predB, actual_per_class, total):
+    #TP and FP and TN count for B
+    true_pos =  predB[1]
+    false_pos = predB[0] + predB[2]
+    true_neg = actual_per_class[1]-predB[1] + actual_per_class[2]-predB[2]
+    #TPR and FPR count for B
+    tpr = true_pos/actual_per_class[1]
+    fpr = false_pos/(actual_per_class[0]+actual_per_class[2])
+    return true_pos, false_pos, true_neg, tpr, fpr
+
+def ratesC(predC, actual_per_class, total):
+    #TP and FP and TN count for C
+    true_pos =  predC[2]
+    false_pos = predC[0] + predC[1]
+    true_neg = actual_per_class[0]-predC[0] + actual_per_class[1]-predC[1]
+    #TPR and FPR count for C
+    tpr = true_pos/actual_per_class[2]
+    fpr = false_pos/(actual_per_class[0]+actual_per_class[1])
+    return true_pos, false_pos, true_neg, tpr, fpr
+
+"""
+#Decision boindary is a plane orthonal to the vector 
+#between two centroids and passing through the midpoint
+#of
+Defining the Decision boundary and counting number of test 
+predicted to be within the boundary
+a(x-x0)+b(y-y0)+c(z-z0)=0 : plane eqn
+a,b,c are vector elements
+x0,y0,z0 are midpoint coords 
+x,y,z are test data values
+ the line segment which connects the two centroids
+"""
+def dec_boundary(testing_input, vectAC, vectAB, vectBC, midAC, midAB, midBC, actual_per_class, dim):
+    predA = np.zeros(3)
+    predB = np.zeros(3)
+    predC = np.zeros(3)
+    n = actual_per_class
+    for i in range(1,n[0]+1):  #Ranges from data[1:numA+1] 1 through end of A's
+        if(ab_bound(vectAB, midAB, dim, testing_input[i])<=0):
+            if(ac_bound(vectAC, midAC, dim, testing_input[i])<=0):
+                predA[0] = predA[0]+1
+            else:
+                predA[2] = predA[2]+1
+        elif(bc_bound(vectBC, midBC, dim, testing_input[i])<=0):
+            predA[1] = predA[1]+1
+        else:
+            predA[2] = predA[2]+1
+
+    for i in range(n[0]+1,n[0]+n[1]+1): #Ranges from data[NumA+1:NumA+NumB+1]
+        if(ab_bound(vectAB, midAB, dim, testing_input[i])<=0):
+            if(ac_bound(vectAC, midAC, dim, testing_input[i])<=0):
+                predB[0] = predB[0]+1
+            else:
+                predB[2] = predB[2]+1
+        elif(bc_bound(vectBC, midBC, dim, testing_input[i])<=0):
+            predB[1] = predB[1]+1
+        else:
+            predB[2] = predB[2]+1
+
+    for i in range(n[0]+n[1]+1,n[0]+n[1]+n[2]+1): #Ranges from data[NumA+NumB+1:NumA+NumB+NumC+1]       
+        if(ab_bound(vectAB, midAB, dim, testing_input[i])<=0):
+            if(ac_bound(vectAC, midAC, dim, testing_input[i])<=0):
+                predC[0] = predC[0]+1
+            else:
+                predC[2] = predC[2]+1
+        elif(bc_bound(vectBC, midBC, dim, testing_input[i])<=0):
+            predC[1] = predC[1]+1
+        else:
+            predC[2] = predC[2]+1
+
+    return predA,predB,predC
+
 def ab_bound(vectAB, midAB, dim, data):
     val = 0
     for i in range(0,dim):
@@ -86,18 +213,6 @@ def ac_bound(vectAC, midAC, dim, data):
     for i in range(0,dim):
         val=val+vectAC[i]*(data[i]-midAC[i])
     return val
-
-"""
-Defining the Decision boundary and counting number of test 
-predicted to be within the boundary
-a(x-x0)+b(y-y0)+c(z-z0)=0 : plane eqn
-a,b,c are vector elements
-x0,y0,z0 are midpoint coords 
-x,y,z are test data values
-"""
-def dec_boundary(testing_input, vectAC, vectAB, vectBC, midAC, midAB, midBC, clust,
-                 actual_per_class, dim):
-
 
 
 """
@@ -174,6 +289,8 @@ if __name__ == "__main__":
     from scipy import sparse
     from scipy import linalg
     import scipy.sparse.linalg as spla
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
     """
     You can use this to test your code.
     python hw2.py [training file path] [testing file path]
